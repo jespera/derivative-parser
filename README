@@ -1,0 +1,8 @@
+Derivative parser for CFGs
+
+This is an attempt to reconstruct the derivative-based parsing
+technique from the 'Yacc is dead'-paper
+(http://arxiv.org/abs/1010.5023) in OCaml.
+
+This initial version is really crap. Don't use it or look at it. Your
+eyes may begin to bleed.
