@@ -289,31 +289,34 @@ let s_grm =
 
 let list_grm =
   let open Grammar in
-  add_rule "List" (Rule[
-    [Lit 'x'];
-    [NT "List"; Lit ';'; Lit 'x']
-  ]) (make_grm "List")
+  (make_grm "S") +> 
+  ("List", nop 
+    +| [Lit 'x']
+    +| [NT "List"; Lit ';'; Lit 'x'])
+
 
 
 let exp_grm =
   let open Grammar in
-  add_rule "Exp" (Rule[
-    [NT "Num"];
-    [NT "Exp"; Lit '+'; NT "Exp"]
-  ]) (
-  add_rule "Num" (Rule[
-    [NT "Digit"];
-    [NT "Num"; NT "Digit"]
-  ]) (
-  add_rule "Digit" (Rule[
-    [Lit '0'];
-    [Lit '1'];
-    [Lit '2'];
-    [Lit '3'];
-    [Lit '4'];
-    [Lit '5'];
-    [Lit '6'];
-    [Lit '7'];
-    [Lit '8'];
-    [Lit '9'];
-  ]) (make_grm "Exp")))
+  (make_grm "Exp") +>
+  ("Exp", nop
+   +| [NT "Num"]
+   +| [NT "Exp"; Lit '+'; NT "Exp"]) +>
+  ("Num", nop
+   +| [NT "Digit"]
+   +| [NT "Num"; NT "Digit"]) +>
+  ("Digit", nop
+   +| [Lit '0']
+   +| [Lit '1']
+   +| [Lit '2']
+   +| [Lit '3']
+   +| [Lit '4']
+   +| [Lit '5']
+   +| [Lit '6']
+   +| [Lit '7']
+   +| [Lit '8']
+   +| [Lit '9']
+  )
+
+
+
