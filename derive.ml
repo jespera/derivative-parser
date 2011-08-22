@@ -49,7 +49,7 @@ module Grammar =
      * and None < Some true and nothing else *)
 
     let string_of_null_opt = function
-      | None -> "⏊"
+      | None -> "_|_"
       | Some f -> string_of_bool f
 
     let string_of_nullmap nm =
