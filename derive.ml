@@ -248,6 +248,10 @@ module Grammar =
         rules = RuleMap.add name p_rule grm.rules;
       }
 
+    let nop = Rule []
+    let (+|) (Rule ps_lists) ps_list = Rule (ps_list :: ps_lists)
+    let (+>) grm (name, p_rule) = add_rule name p_rule grm
+
     let explode str =
       let s_len = String.length str in
       let rec loop n =
