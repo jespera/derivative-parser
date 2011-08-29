@@ -138,18 +138,13 @@ module Grammar =
         []
       in
       new_fix 
-      (fun new_rules old_rules_map -> 
-        begin
-          (*print_endline ("New rules: " ^*)
-            (*String.concat " " (List.map (fun (n,_) -> n) new_rules)*)
-          (*);*)
-          new_rules = []
-        end)
+      (fun new_rules old_rules_map -> new_rules = [])
       (fun new_rules cur_rules_map -> 
         (* add new_rules to cur_rules_map *)
-        List.fold_left (fun acc_map (name, pre_rule) -> 
-          RuleMap.add name !!pre_rule acc_map
-        ) cur_rules_map new_rules
+        List.fold_left 
+          (fun acc_map (name, pre_rule) -> RuleMap.add name !!pre_rule acc_map) 
+          cur_rules_map 
+          new_rules
       )
       f start_rules
 
@@ -191,11 +186,42 @@ module Grammar =
          * it references a rule already known to be nullable
          *)
         RuleMap.fold g reachable_rules x in
-      (*let () = print_endline "starting fix-point iteration" in*)
       fix eq f NullMap.empty
 
     let derive_x_nt x name = "d" ^ String.make 1 x ^ "["^name^"]"
 
+    let is_empty_pre ps_lists = 
+      List.for_all (List.mem Empty) ps_lists
+
+
+    let remove_empty ps_lists rules = 
+      let rec loop acc = function
+        | [] -> List.rev acc
+        | ps :: ps_rest -> 
+            if List.exists (function 
+                  | NT r -> not(RuleMap.mem r rules)
+                  | _ -> false
+                ) ps
+            then loop acc ps_rest
+            else loop (ps :: acc) ps_rest
+      in
+      Rule (loop [] ps_lists)
+
+
+    let prune_rules rules =
+      let prunef acc_rulesf =
+        let f name pre_rule acc_rules = 
+          match !!pre_rule with
+          | Rule ps_lists -> 
+              if is_empty_pre ps_lists 
+              then acc_rules
+              else 
+                RuleMap.add name (remove_empty ps_lists acc_rulesf) acc_rules
+          | _ -> raise Lazy_error
+        in
+          RuleMap.fold f acc_rulesf RuleMap.empty in
+      in 
+        fix (=) prunef rules in
 
     (* A call 'derive x grm' constructs (lazily) a new grammar that corresponds
      * to grm after x has be accepted. *)
@@ -221,8 +247,7 @@ module Grammar =
                   f ((NT (derive_x_nt x s) :: ps) :: acc) ps
         in 
         match pre_rule with
-        | Rule ps_lists -> 
-            Rule (List.fold_left f [] ps_lists)
+        | Rule ps_lists -> Rule (List.fold_left f [] ps_lists)
         | _ -> raise Lazy_error
       in
       let lazy_derive_rule rule_name pre_rule acc_rules = 
@@ -234,12 +259,15 @@ module Grammar =
           acc_rules
         end
       in
-      let reachable_rules = get_reachable grm in
-      (* for each reachable rule, construct the derived rule and add it to the
-       * grammar given *)
-      {start = derive_x_nt x grm.start;
-       rules = RuleMap.fold lazy_derive_rule reachable_rules grm.rules 
-      }
+      begin
+        let reachable_rules = get_reachable grm in
+        let good_rules = prune_rules reachable_rules in
+        (* for each reachable rule, construct the derived rule and add it to the
+         * grammar given *)
+        {start = derive_x_nt x grm.start;
+         rules = RuleMap.fold lazy_derive_rule good_rules grm.rules 
+        }
+      end
 
 
 
@@ -266,13 +294,19 @@ module Grammar =
         let rec loop grm = function
           | [] -> 
               begin
-                let res = NullMap.find grm.start (compute_nullables grm) in
-                print_endline "Done deriving; resulting grammar:";
-                print_endline (string_of_rules grm.rules);
+                print_endline "\nDone deriving; resulting grammar:";
                 print_endline ("start: " ^ grm.start);
-                res
+                print_endline (string_of_rules grm.rules);
+                print_endline ("Checking for nullability...");
+                let res = NullMap.find grm.start (compute_nullables grm) in
+                print_endline (string_of_bool (Some true = res));
               end
-          | c :: cs -> loop (derive_grm c grm) cs
+          | c :: cs -> 
+              begin
+                print_string (String.make 1 c);
+                flush stdout;
+                loop (derive_grm c grm) cs
+              end
         in
           loop grm (explode str)
       end
@@ -319,4 +353,58 @@ let exp_grm =
   )
 
 
+let gtree_grm =
+  let open Grammar in
+  (make_grm "GT") +>
+  ("GT", nop 
+  +| [NT "NODE_TYPE"; Lit '['; NT "GT_LIST"; Lit ']']) +>
+  ("NODE_TYPE", nop
+  +| [NT "CHAR"; NT "NODE_TYPE"]
+  +| [NT "CHAR"]) +>
+  ("GT_LIST", nop
+  +| [Epsilon]
+  +| [NT "GT_ONE"]) +>
+  ("GT_ONE", nop
+  +| [NT "GT"]
+  +| [NT "GT"; Lit ','; NT "GT_ONE"]) +>
+  ("CHAR", nop
+  +| [Lit 'a']
+  +| [Lit 'b']
+  +| [Lit 'c']
+  +| [Lit 'd']
+  +| [Lit 'e']
+  +| [Lit 'f']
+  +| [Lit 'g']
+  +| [Lit 'h']
+  +| [Lit 'i']
+  +| [Lit 'j']
+  +| [Lit 'k']
+  +| [Lit 'l']
+  +| [Lit 'm']
+  +| [Lit 'n']
+  +| [Lit 'o']
+  +| [Lit 'p']
+  +| [Lit 'q']
+  +| [Lit 'r']
+  +| [Lit 's']
+  +| [Lit 't']
+  +| [Lit 'u']
+  +| [Lit 'v']
+  +| [Lit 'x']
+  +| [Lit 'y']
+  +| [Lit 'z']
+  +| [Lit '0']
+  +| [Lit '1']
+  +| [Lit '2']
+  +| [Lit '3']
+  +| [Lit '5']
+  +| [Lit '6']
+  +| [Lit '7']
+  +| [Lit '8']
+  +| [Lit '9'])
 
+let () = begin
+  let res = Grammar.recognize "statement[const[int[a[]]],const[]]" gtree_grm in
+  res
+  (*print_endline (string_of_bool (res = Some true))*)
+end
