@@ -219,9 +219,9 @@ module Grammar =
                 RuleMap.add name (remove_empty ps_lists acc_rulesf) acc_rules
           | _ -> raise Lazy_error
         in
-          RuleMap.fold f acc_rulesf RuleMap.empty in
-      in 
-        fix (=) prunef rules in
+          RuleMap.fold f acc_rulesf RuleMap.empty 
+        in
+          fix (=) prunef rules 
 
     (* A call 'derive x grm' constructs (lazily) a new grammar that corresponds
      * to grm after x has be accepted. *)
